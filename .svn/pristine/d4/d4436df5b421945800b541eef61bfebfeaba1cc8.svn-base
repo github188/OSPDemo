@@ -1,0 +1,79 @@
+/*==========================================================
+函数名：ProcSendMsgReq
+功能：服务器单发消息操作
+算法实现：
+参数说明：pMsg : OSP传递的消息体
+返回值说明：无
+-------------------------------------------------------------------------------------------------------
+修改记录：
+日  期		版本		修改人		走读人        修改记录
+
+===========================================================*/
+#include "../include/server.h"
+#include "../../include/cscommon.h"
+
+void CSDateInstance::ProcSendMsgReq(CMessage *const pMsg)
+{
+	if (IDLE_STATE != CurState())
+	{
+		//拷贝消息，获取目标Instance号
+		s8 achContent[100] = {0};   
+		s8 achMsgContent[100] = {0};    //重组消息
+		
+		memcpy(achContent,pMsg->content,pMsg->length);
+		cbShowNumToConsole(m_dwClientNode,"收到单发消息指令。来自node=",OutPutMsg);
+		logprintf(LOG_LVL_KEYSTATUS,"Instance: recv !0 from client.\n");
+		
+		u16 wInsNum = atoi(strtok(achContent,","));//得到目的Instance号
+		strcpy(achMsgContent,m_achClientName);
+		strcat(achMsgContent," said to you :");
+		strcat(achMsgContent,strtok(NULL,"\0"));
+		
+		//设置定时器判断是否存在对端
+		//SetTimer(S_S_SENDMSGFAIL_NOTIFY,WAITED_TIME);---8.11修改判断与instance最大值的比较 来确定
+		//发到目的Instance
+		if (wInsNum > SERVER_MAX_INSTANCE)
+		{
+			post(m_dwClientId,S_C_SENDMSG_NACK,NULL,0,m_dwClientNode);
+		}
+		else
+		{
+			post(MAKEIID(SERVER_MSGAPP_NO,wInsNum),S_S_SENDMSG_NOTIFY,achMsgContent,strlen(achMsgContent),0);	
+		}
+	
+	}
+	else
+	{
+		cbShowMsgtoConsole("Warning: 收到发送消息请求",OutputMsgtoUser);
+		logprintf(LOG_LVL_WARNING,"msgapp: 收到发送消息请求.\n");
+    }      
+	
+}
+
+void CSDateInstance::ProcSendMsgOkNoti(CMessage *const pMsg)	//发送消息成功
+{
+	if (IDLE_STATE != CurState())
+	{
+		logprintf(LOG_LVL_KEYSTATUS,"Instance: recv server msg ok notify.\n");
+		post(m_dwClientId,S_C_SENDMSG_ACK,NULL,0,m_dwClientNode);
+	}
+	else
+	{
+		cbShowMsgtoConsole("Warning: 收到发送消息ok通知",OutputMsgtoUser);
+		logprintf(LOG_LVL_WARNING,"msgapp: 收到发送消息ok通知.\n");
+	}	
+}
+
+void CSDateInstance::ProcSendMsgFailNoti(CMessage *const pMsg)	//发送消息失败
+{
+	if (IDLE_STATE != CurState())
+	{
+		logprintf(LOG_LVL_KEYSTATUS,"Instance: recv server msg fail notify.\n");
+		post(m_dwClientId,S_C_SENDMSG_NACK,NULL,0,m_dwClientNode);
+	}
+	else
+	{
+		cbShowMsgtoConsole("Warning: 收到发送消息fail通知",OutputMsgtoUser);
+		logprintf(LOG_LVL_WARNING,"msgapp: 收到发送消息fail通知.\n");
+	}
+}

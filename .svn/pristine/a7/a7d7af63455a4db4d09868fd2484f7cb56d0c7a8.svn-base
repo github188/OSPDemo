@@ -1,0 +1,38 @@
+/*==========================================================
+函数名：SendFileCmd
+功能：向Daemon发送发文件命令
+算法实现：
+参数说明：
+返回值说明：
+-------------------------------------------------------------------------------------------------------
+修改记录：
+日  期		版本		修改人		走读人        修改记录
+
+===========================================================*/
+#include "../../include/interface.h"
+
+using namespace std;
+
+
+void SendFileCMD()
+{
+	s8 achFileInfo[256] = {0};//保存文件路径
+    cout << "请输入需上传文件路径：" << endl;
+    cin.get(achFileInfo,256);
+	if (FALSE == UserInputCheck(FILENAMECONTENT,achFileInfo))
+	{
+		cout << "该文件不存在" <<endl;
+		return;
+	}
+
+    //发文件命令---Daemon
+    u32 dwRetVal = OspPost(MAKEIID(CLIENT_MSGAPP_NO,CInstance::DAEMON),U_C_SENDFILE_CMD,achFileInfo,strlen(achFileInfo));   
+    if (0 == dwRetVal)
+    {
+		logprintf(LOG_LVL_DETAIL,"post send file cmd to daemon succeed.\n");
+    } 
+    else
+    {
+		logprintf(LOG_LVL_DETAIL,"post send file cmd to daemon failed.\n");
+    }
+} 

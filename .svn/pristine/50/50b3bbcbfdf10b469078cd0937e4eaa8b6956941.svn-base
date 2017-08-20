@@ -1,0 +1,52 @@
+/*==========================================================
+函数名：DaemonProcConnectCmd
+功能：客户端daemon连接命令
+算法实现：
+参数说明：pMsg : OSP传递的消息体
+返回值说明：无
+-------------------------------------------------------------------------------------------------------
+修改记录：
+日  期		版本		修改人		走读人        修改记录
+
+===========================================================*/
+#include "../../include/client.h"
+#include "../../../include/cscommon.h"
+
+//Daemon收到连接命令操作
+void CCDateInstance::DaemonProcConnectCmd(CMessage *const pMsg) 
+{ 
+	KillTimer(CONNECT_TIMEOUT);
+    s8 achContent[40] = {0}; //消息内容
+    
+	u8 bytype = 2;
+    memcpy(achContent,pMsg->content,pMsg->length);
+    logprintf(LOG_LVL_DETAIL,"Daemon instance recv connect cmd\n");
+    cbShowMsgtoConsole2(bytype,"Daemon instance recv connect cmd",OutputMsgtoUser2);
+	
+	strcpy(m_achIpAddr,strtok(achContent,","));
+    strcpy(m_achusername,strtok(NULL,"\0")); 
+    
+    //连接服务器/判断返回值-----加循环判断连接
+    m_dwServerNode = OspConnectTcpNode(inet_addr(m_achIpAddr),SERVER_LISTEN_PORT);
+	
+    if (INVALID_NODE == m_dwServerNode)
+    {
+		cbShowMsgtoConsole("connect tcp fail/ip wrong or server shut down or ...\n",OutputMsgtoUser);
+		logprintf(LOG_LVL_WARNING,"connect tcp fail/ip wrong or server shut down or ...\n");
+        //OspQuit();	取消注释即跳到上层循环，不会触发定时重连机制 
+    }else{
+		u32 dwLocalIpAddr = OspNodeLocalIpGet(m_dwServerNode);//获得与指定结点连接用的本地IP地址
+        logprintf(LOG_LVL_KEYSTATUS,"connect tcp succeed. \n");
+		
+        cbShowMsgtoConsole("Osp connect to node succeed! wait server ack!",OutputMsgtoUser);
+		
+		//2017.07.20重组用户名和ip，用于区分客户端重名
+		strcat(m_achusername,inet_ntoa(*((in_addr*)&dwLocalIpAddr))); 
+		
+		//设置断链检测---告知Daemon
+		OspSetHBParam(m_dwServerNode,CLIENT_HBTIME,CLIENT_HBNUM);
+		OspNodeDiscCBRegQ(m_dwServerNode,CLIENT_MSGAPP_NO,CCDateInstance::DAEMON);
+    }    
+    //设置定时器
+    SetTimer(CONNECT_TIMEOUT,CONNECT_TIME);
+}

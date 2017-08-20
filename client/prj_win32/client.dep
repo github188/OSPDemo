@@ -1,0 +1,109 @@
+# Microsoft Developer Studio Generated Dependency File, included by client.mak
+
+..\source\callback.cpp : \
+	"..\..\..\..\..\..\..\program files (x86)\microsoft visual studio\vc98\include\basetsd.h"\
+	"..\..\include\kdvdef.h"\
+	"..\..\include\kdvtype.h"\
+	"..\..\include\osp.h"\
+	"..\include\client.h"\
+	
+
+..\source\clientfileinstance.cpp : \
+	"..\..\..\..\..\..\..\program files (x86)\microsoft visual studio\vc98\include\basetsd.h"\
+	"..\..\include\kdvdef.h"\
+	"..\..\include\kdvtype.h"\
+	"..\..\include\osp.h"\
+	"..\include\client.h"\
+	
+
+..\source\clientinstance.cpp : \
+	"..\..\..\..\..\..\..\program files (x86)\microsoft visual studio\vc98\include\basetsd.h"\
+	"..\..\include\cscommon.h"\
+	"..\..\include\kdvdef.h"\
+	"..\..\include\kdvtype.h"\
+	"..\..\include\osp.h"\
+	"..\include\client.h"\
+	"..\include\uccommand.h"\
+	
+
+..\source\interface.cpp : \
+	"..\..\..\..\..\..\..\program files (x86)\microsoft visual studio\vc98\include\basetsd.h"\
+	"..\..\include\kdvtype.h"\
+	"..\..\include\osp.h"\
+	"..\include\interface.h"\
+	
+
+..\source\logprintf.cpp : \
+	"..\..\..\..\..\..\..\program files (x86)\microsoft visual studio\vc98\include\basetsd.h"\
+	"..\..\include\kdvdef.h"\
+	"..\..\include\kdvtype.h"\
+	"..\..\include\osp.h"\
+	"..\include\client.h"\
+	
+
+..\source\main.cpp : \
+	"..\..\..\..\..\..\..\program files (x86)\microsoft visual studio\vc98\include\basetsd.h"\
+	"..\..\include\cscommon.h"\
+	"..\..\include\kdvdef.h"\
+	"..\..\include\kdvtype.h"\
+	"..\..\include\osp.h"\
+	"..\include\client.h"\
+	
+
+..\source\osphelpc.cpp : \
+	"..\..\..\..\..\..\..\program files (x86)\microsoft visual studio\vc98\include\basetsd.h"\
+	"..\..\include\kdvdef.h"\
+	"..\..\include\kdvtype.h"\
+	"..\..\include\osp.h"\
+	"..\include\client.h"\
+	
+
+..\source\connectservercmd.cpp : \
+	"..\..\..\..\..\..\..\program files (x86)\microsoft visual studio\vc98\include\basetsd.h"\
+	"..\..\include\cscommon.h"\
+	"..\..\include\kdvdef.h"\
+	"..\..\include\kdvtype.h"\
+	"..\..\include\osp.h"\
+	"..\include\client.h"\
+	"..\include\uccommand.h"\
+	
+
+..\source\interruptconnectcmd.cpp : \
+	"..\..\..\..\..\..\..\program files (x86)\microsoft visual studio\vc98\include\basetsd.h"\
+	"..\..\include\cscommon.h"\
+	"..\..\include\kdvdef.h"\
+	"..\..\include\kdvtype.h"\
+	"..\..\include\osp.h"\
+	"..\include\client.h"\
+	"..\include\uccommand.h"\
+	
+
+..\source\requserlistcmd.cpp : \
+	"..\..\..\..\..\..\..\program files (x86)\microsoft visual studio\vc98\include\basetsd.h"\
+	"..\..\include\cscommon.h"\
+	"..\..\include\kdvdef.h"\
+	"..\..\include\kdvtype.h"\
+	"..\..\include\osp.h"\
+	"..\include\client.h"\
+	"..\include\uccommand.h"\
+	
+
+..\source\sendfilecmd.cpp : \
+	"..\..\..\..\..\..\..\program files (x86)\microsoft visual studio\vc98\include\basetsd.h"\
+	"..\..\include\cscommon.h"\
+	"..\..\include\kdvdef.h"\
+	"..\..\include\kdvtype.h"\
+	"..\..\include\osp.h"\
+	"..\include\client.h"\
+	"..\include\uccommand.h"\
+	
+
+..\source\sendmsgcmd.cpp : \
+	"..\..\..\..\..\..\..\program files (x86)\microsoft visual studio\vc98\include\basetsd.h"\
+	"..\..\include\cscommon.h"\
+	"..\..\include\kdvdef.h"\
+	"..\..\include\kdvtype.h"\
+	"..\..\include\osp.h"\
+	"..\include\client.h"\
+	"..\include\uccommand.h"\
+	

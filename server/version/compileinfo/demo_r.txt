@@ -1,0 +1,12 @@
+Warning: cannot find "demo.dep"
+	if not exist ".\Release/" mkdir ".\Release"
+	cl.exe @C:\DOCUME~1\李洪强\LOCALS~1\Temp\nma01724.
+stdafx.cpp
+	rc.exe /l 0x804 /fo".\Release\demo.res" /d "NDEBUG" /d "_AFXDLL" .\demo.rc
+	cl.exe @C:\DOCUME~1\李洪强\LOCALS~1\Temp\nmb01724.
+stdafx.cpp
+	cl.exe /nologo /MD /W3 /GX /O2 /I ".\\" /I "..\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /Fp".\Release\demo.pch" /Yu"stdafx.h" /Fo".\Release\\" /Fd".\Release\\" /FD /c ..\source\demo.cpp
+demo.cpp
+	cl.exe /nologo /MD /W3 /GX /O2 /I ".\\" /I "..\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /Fp".\Release\demo.pch" /Yu"stdafx.h" /Fo".\Release\\" /Fd".\Release\\" /FD /c ..\source\demodlg.cpp
+demodlg.cpp
+	link.exe @C:\DOCUME~1\李洪强\LOCALS~1\Temp\nmc01724.

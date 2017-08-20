@@ -1,0 +1,308 @@
+
+
+/*==========================================================
+函数名：ServerInstance
+功能：服务器Instance相关处理
+算法实现：
+参数说明：[I/O/IO]参数：含义（说明：按照参数的顺序排序）
+返回值说明：
+-------------------------------------------------------------------------------------------------------
+修改记录：
+日  期		版本		修改人		走读人        修改记录
+
+===========================================================*/
+#include "../include/server.h"
+#include "../../include/cscommon.h"
+#include "../include/serverfile.h"
+#include "io.h"
+using namespace std;
+
+extern CServerApp g_CServerApp;
+extern CSFileApp g_CSFileApp;
+
+void CSDateInstance::DaemonInstanceEntry(CMessage *const pMsg, CApp* pcApp)
+{
+    if ((NULL == pMsg) || (NULL == pcApp))
+    {
+		logprintf(LOG_LVL_ERROR,"Daemon: server pMsg or pcApp is NULL.\n"); 
+        OspQuit();
+        return ;
+    }
+   
+    u16 wCurEvent = pMsg ->event;   //得到当前消息的类型
+
+    switch (wCurEvent)
+    {
+    case C_S_REQUSERLIST_REQ:       //拉取列表，遍历instance 
+		 DaemonProcUserlistReq(pMsg,pcApp);
+         break;
+          
+    case C_S_SENDMSG_REQ:           //广播消息
+		DaemonProcBroadcastReq(pMsg,pcApp);
+        break; 
+
+	case S_S_SENDMSGOK_NOTIFY:      //广播消息反馈
+		cbShowMsgtoConsole("一条消息发送成功",OutputMsgtoUser);
+		break;
+
+	case S_S_SENDMSGFAIL_NOTIFY:    //广播消息反馈
+        cbShowMsgtoConsole("一条消息发送失败",OutputMsgtoUser);
+        break;
+
+    default:
+		cbShowMsgtoConsole("daemon can't read this msg ",OutputMsgtoUser);
+        break;
+    }
+}
+
+void CSDateInstance::InstanceEntry(CMessage *const pMsg)
+{
+    if (NULL == pMsg)
+    {
+		logprintf(LOG_LVL_ERROR,"Instance: server pMsg is null.\n");
+        OspQuit();
+    }
+
+    u16 wCurEvent = pMsg ->event;   //得到当前消息的类型
+    switch (wCurEvent)
+    { 
+    case C_S_CONNECTSERVER_REQ:     //连接请求--实现状态切换.消息存储.设置断链检测
+        if (IDLE_STATE == CurState())
+        {
+			ProcConnectReq(pMsg);
+        }
+        else
+		{
+			cbShowMsgtoConsole("Warning: 收到连接服务器请求",OutputMsgtoUser);
+		    logprintf(LOG_LVL_WARNING,"msgapp: 收到连接服务器请求.\n");
+		}    
+        break;
+
+    case  C_S_SENDMSG_REQ:      //单发消息-------（7.20需要增加判断对应端是否存在）？ √
+        if (IDLE_STATE != CurState())
+        {
+             ProcSendMsgReq(pMsg);
+        }
+		else
+		{
+			cbShowMsgtoConsole("Warning: 收到发送消息请求",OutputMsgtoUser);
+		    logprintf(LOG_LVL_WARNING,"msgapp: 收到发送消息请求.\n");
+        }       
+        break;
+
+	case S_S_SENDMSGOK_NOTIFY:   //成功发送消息
+		if (IDLE_STATE != CurState())
+		{
+			logprintf(LOG_LVL_KEYSTATUS,"Instance: recv server msg ok notify.\n");
+		    post(m_dwClientId,S_C_SENDMSG_ACK,NULL,0,m_dwClientNode);
+		}
+		else
+		{
+			cbShowMsgtoConsole("Warning: 收到发送消息ok通知",OutputMsgtoUser);
+		    logprintf(LOG_LVL_WARNING,"msgapp: 收到发送消息ok通知.\n");
+		}	
+		break;
+
+	case S_S_SENDMSGFAIL_NOTIFY:	//发送消息失败
+		if (IDLE_STATE != CurState())
+		{
+			logprintf(LOG_LVL_KEYSTATUS,"Instance: recv server msg fail notify.\n");
+			post(m_dwClientId,S_C_SENDMSG_NACK,NULL,0,m_dwClientNode);
+		}
+		else
+		{
+			cbShowMsgtoConsole("Warning: 收到发送消息fail通知",OutputMsgtoUser);
+			logprintf(LOG_LVL_WARNING,"msgapp: 收到发送消息fail通知.\n");
+		}
+		break;
+
+    case S_S_SENDMSG_NOTIFY:    //转发消息
+		if (IDLE_STATE != CurState())
+		{
+			ProcSendMsgNotify(pMsg);
+		}
+		else
+        {
+			post(pMsg->srcid,S_S_SENDMSGFAIL_NOTIFY,NULL,0,0);
+			cbShowMsgtoConsole("Warning: 收到发送消息notify通知",OutputMsgtoUser);
+		    logprintf(LOG_LVL_WARNING,"msgapp: 收到发送消息notify通知.\n");
+        }
+        break;
+
+    case C_S_SENDFILEMSG_REQ:   //收到发文件请求；实现判断文件名大小是否合适;切换状态，反馈信息；
+		if (CONNECT_STATE == CurState())
+		{
+			ProcSendFileMsgReq(pMsg);
+		}
+		else
+        {
+			cbShowMsgtoConsole("Warning: 收到发送文件信息req",OutputMsgtoUser);
+		    logprintf(LOG_LVL_WARNING,"msgapp: 收到发送文件信息req.\n");
+        } 
+        break;
+
+	case S_S_FILEMSG_ACK:	//保存写文件app对应instance号 ---2017-8-3客户端同时上传多个文件，如何处理？
+		if (CONNECT_STATE == CurState())
+		{
+			logprintf(LOG_LVL_KEYSTATUS,"Instance: msg instance recv file ack.\n");
+			cbShowMsgtoConsole("收到fileapp的确认消息",OutputMsgtoUser);
+			m_dwServerId = pMsg->srcid;
+			NextState(FILE_STATE);			//状态切换
+			post(m_dwClientFileId,S_C_SENDFILEMSG_ACK,NULL,0,m_dwClientNode);
+		}
+		else
+		{
+			cbShowMsgtoConsole("Warning: 收到文件信息确认ack",OutputMsgtoUser);
+		    logprintf(LOG_LVL_WARNING,"msgapp: 收到文件信息确认ack.\n");	
+		}
+		break;
+
+	case S_S_FILEMSG_NACK:	//文件信息打开失败，返回客户端nack消息
+		if (CONNECT_STATE == CurState())
+		{
+			logprintf(LOG_LVL_KEYSTATUS,"Instance: msg instance recv file nack.\n");
+			cbShowMsgtoConsole("收到fileapp的文件打开错误消息",OutputMsgtoUser);
+			post(m_dwClientFileId,S_C_SENDFILEMSG_NACK,NULL,0,m_dwClientNode);
+		}
+		else
+		{
+			cbShowMsgtoConsole("Warning: 收到文件信息nack",OutputMsgtoUser);
+			logprintf(LOG_LVL_WARNING,"msgapp: 收到文件信息nack.\n");	
+		}
+
+
+    case C_S_SENDFILECONTENT_REQ:   //开始发送数据包;实现转发数据给写文件app，以及返回客户端消息
+		if (FILE_STATE == CurState())
+		{
+			s8 achFileContent[SERVER_FILE_BUFF_SIZE] = {0};
+            memcpy(achFileContent,pMsg->content,pMsg->length);
+			
+			logprintf(LOG_LVL_KEYSTATUS,"Instance: recv send file req.\n");
+			cbShowMsgtoConsole("服务器收到文件请求",OutputMsgtoUser);
+			post(m_dwServerId,S_S_WRITEFILE_CMD,achFileContent,pMsg->length,0);
+		}
+		else
+		{	
+			cbShowMsgtoConsole("Warning: 收到文件内容req",OutputMsgtoUser);
+			logprintf(LOG_LVL_WARNING,"msgapp: 收到文件内容req.\n");
+       /*   m_dwNumCount ++;
+            if (m_dwNumCount == m_dwFileNum )  //判断文件发送存入缓存区---文件最后一包
+			{
+				memcpy(bufone.achFileBuffer + (m_dwNumCount-1) * SERVER_FILE_BUFF_SIZE * sizeof(s8),pMsg->content,pMsg->length);
+				//发送cmd到写文件app
+				for (u32 dwTemp = 0;dwTemp < (m_dwNumCount - 1);dwTemp++)
+				{
+					memcpy(achFileContent,bufone.achFileBuffer + dwTemp * SERVER_FILE_BUFF_SIZE * sizeof(s8),SERVER_FILE_BUFF_SIZE*sizeof(s8));
+					post(m_dwServerId,S_S_WRITEFILE_CMD,achFileContent,pMsg->length,0);
+				}
+				//文件最后一包
+				memcpy(achFileContent,bufone.achFileBuffer + (m_dwNumCount - 1) * SERVER_FILE_BUFF_SIZE* sizeof(s8),(m_dwFileSize-m_dwFileSize / SERVER_FILE_BUFF_SIZE * SERVER_FILE_BUFF_SIZE) * sizeof(s8));
+				post(m_dwServerId,S_S_WRITEFILE_CMD,achFileContent,(m_dwFileSize-m_dwFileSize / SERVER_FILE_BUFF_SIZE * SERVER_FILE_BUFF_SIZE) * sizeof(s8),0);
+
+			}
+			else if (m_dwNumCount < 256)  //同一个缓存区
+			{
+				memcpy(bufone.achFileBuffer + (m_dwNumCount-1) * SERVER_FILE_BUFF_SIZE * sizeof(s8),pMsg->content,pMsg->length);
+				post(m_dwClientFileId,S_C_SENDFILECONTENT_ACK,NULL,0,m_dwClientNode);
+			}
+			else if (m_dwNumCount == 256) //同一缓存区最后一包
+			{
+				memcpy(bufone.achFileBuffer + (m_dwNumCount-1) * SERVER_FILE_BUFF_SIZE * sizeof(s8),pMsg->content,pMsg->length);
+				//发送cmd到写文件app
+				for (u32 dwTemp = 0;dwTemp < m_dwNumCount ;dwTemp++)
+				{
+					memcpy(achFileContent,bufone.achFileBuffer + dwTemp * SERVER_FILE_BUFF_SIZE * sizeof(s8),SERVER_FILE_BUFF_SIZE*sizeof(s8));
+					post(m_dwServerId,S_S_WRITEFILE_CMD,achFileContent,pMsg->length,0);
+				}
+				m_dwNumCount = 0;
+				m_dwFileNum = m_dwFileNum - 256;
+				post(m_dwClientFileId,S_C_SENDFILECONTENT_ACK,NULL,0,m_dwClientNode);
+			}  */	
+        }   
+        break;
+
+	case S_S_WRITEFILE_NOTIFY:	//发送下一包通知
+		if (FILE_STATE == CurState())
+		{
+			logprintf(LOG_LVL_KEYSTATUS,"Instance: server recv write file notify.\n");
+			post(m_dwClientFileId,S_C_SENDFILECONTENT_ACK,NULL,0,m_dwClientNode);
+			cbShowMsgtoConsole("服务器ack反馈给客户端",OutputMsgtoUser);
+		}
+		else
+		{
+			cbShowMsgtoConsole("Warning: 收到文件发送noyify",OutputMsgtoUser);
+			logprintf(LOG_LVL_WARNING,"msgapp: 收到文件发送noyify.\n");
+		}
+		
+		break;
+
+    case S_S_WRITEDONE_NOTIFY:	//服务器收到写完成通知，切换状态，发到客户端
+		if (FILE_STATE == CurState())
+		{
+			logprintf(LOG_LVL_KEYSTATUS,"Instance: server recv write done notify.\n");
+            cbShowMsgtoConsole("服务器收到写完成通知",OutputMsgtoUser);
+		    NextState(CONNECT_STATE);
+            post(m_dwClientFileId,S_C_SENDFILEDONE_NOTIFY,NULL,0,m_dwClientNode);
+		}
+		else
+		{
+			cbShowMsgtoConsole("Warning: 收到写完成通知",OutputMsgtoUser);
+			logprintf(LOG_LVL_WARNING,"msgapp: 收到写完成通知.\n");
+		}
+        break;
+
+	case S_S_WRITEWRONG_NOTIFY:		//服务器收到写文件出错通知。(未区别)
+		if (FILE_STATE == CurState())
+		{
+			logprintf(LOG_LVL_KEYSTATUS,"Instance: srever recv file write wrong notify.\n");
+			cbShowMsgtoConsole("服务器收到写文件出错通知",OutputMsgtoUser);
+			post(m_dwClientFileId,S_C_SENDFILEDONE_NOTIFY,NULL,0,m_dwClientNode);
+		    NextState(CONNECT_STATE);
+		}
+		else
+		{
+			cbShowMsgtoConsole("Warning: 收到写文件出错通知",OutputMsgtoUser);
+			logprintf(LOG_LVL_WARNING,"msgapp: 收到写文件出错通知.\n");
+		}
+	
+		break;
+
+
+    case OSP_DISCONNECT:    //断链--状态切换-----是否传输文件状态--删除未完成的文件(发送消息到fileapp)
+        if (IDLE_STATE != CurState())
+        {
+			DeleteAlias();	//删除instance别名
+			//cbShowMsgtoConsole(m_dwClientNode,OutputMsgtoUser);
+			cbShowMsgtoConsole("断开连接",OutputMsgtoUser);			
+			if (FILE_STATE == CurState())
+			{
+				post(m_dwServerId,OSP_DISCONNECT,NULL,0,0);//通知fileapp断开连接
+			}		
+			NextState(IDLE_STATE);
+			m_dwInsState = IDLE_STATE;
+        }
+		else
+		{
+			cbShowMsgtoConsole("Warning: 收到断链通知",OutputMsgtoUser);
+			logprintf(LOG_LVL_WARNING,"msgapp: 收到断链错通知.\n");		
+        }
+		break;
+
+	case OSP_OVERFLOW:		//无空闲实例
+		if (CONNECT_STATE == CurState())
+		{
+			post(m_dwClientFileId,S_C_SENDFILEMSG_NACK,NULL,0,pMsg->srcnode);
+			cbShowMsgtoConsole("写文件app没有空闲的instance",OutputMsgtoUser);
+		}
+		else
+		{
+			cbShowMsgtoConsole("Warning: 收到overflow消息",OutputMsgtoUser);
+			logprintf(LOG_LVL_WARNING,"msgapp:  收到overflow消息.\n");	
+		}
+		break;
+
+    default:
+        cbShowMsgtoConsole("server can't read msg ",OutputMsgtoUser);
+        break;
+    }
+}

@@ -1,0 +1,29 @@
+Deleting intermediate files and output files for project 'prj_win32 - Win32 Release'.
+--------------------Configuration: prj_win32 - Win32 Release--------------------
+Compiling resources...
+Compiling...
+callback.cpp
+clientfileinstance.cpp
+clientinstance.cpp
+interface.cpp
+logprintf.cpp
+main.cpp
+osphelpc.cpp
+outputtoconsole.cpp
+connectservercmd.cpp
+interruptconnectcmd.cpp
+requserlistcmd.cpp
+sendfilecmd.cpp
+sendmsgcmd.cpp
+daemonconnectagain.cpp
+daemonconnectcmd.cpp
+daemonsendmsgcmd.cpp
+fileinsreadfilecmd.cpp
+fileinstreadnextbuf.cpp
+instancebufnotify.cpp
+instancesendfilecontent.cpp
+instsendfileinfo.cpp
+Linking...
+   Creating library Release/client.lib and object Release/client.exp
+
+client.exe - 0 error(s), 0 warning(s)

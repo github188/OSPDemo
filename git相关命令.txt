@@ -1,0 +1,46 @@
+The most commonly used git commands are: 最常用的git命令是： 
+   add        添加文件内容到索引 
+ 
+   bisect     通过二进制查找引入错误的更改
+  
+   branch     分支列表，创建或  删除 分支  
+ 
+   checkout   结帐检查分支或路径到工作树  
+ 
+   clone      克隆将存储库克隆到  新 目录中  
+
+   commit     提交将更改记录到存储库 
+
+   diff       显示提交，提交和工作树等之间的更改 
+ 
+   fetch      从另一个存储库下载对象和引用  
+
+   grep       打印匹配图案的行  
+
+   init       创建一个空的Git仓库或重新初始化现有的Git仓库  
+
+   log        日志显示提交日志
+ 
+   merge      merge合并两个或更多的开发历史
+  
+   mv         mv移动或重命名文件，目录或符号链接
+   
+   pull       从另一个存储库或本地分支中拉取并集成  
+  
+   push       推送更新远程引用以及关联的对象
+  
+   rebase     转发端口本地提交到更新的上游头
+  
+   reset      复位将当前HEAD复位到指定状态 
+
+   rm         从工作树和索引中删除文件  
+
+   show       显示各种类型的对象  
+
+   status     显示工作树状态 
+
+   tag        标签创建，列出，  删除 或验证 使用GPG   签名的标签对象     
+     
+     
+     
+    

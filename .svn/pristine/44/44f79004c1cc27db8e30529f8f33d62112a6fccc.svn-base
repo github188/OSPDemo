@@ -1,0 +1,21 @@
+	if not exist ".\Debug/" mkdir ".\Debug"
+	cl.exe /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /Fp".\Debug\prj_win32.pch" /YX /Fo".\Debug\\" /Fd".\Debug\\" /FD /GZ /c ..\source\clientfileinstance.cpp
+clientfileinstance.cpp
+	cl.exe /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /Fp".\Debug\prj_win32.pch" /YX /Fo".\Debug\\" /Fd".\Debug\\" /FD /GZ /c ..\source\clientinstance.cpp
+clientinstance.cpp
+	cl.exe /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /Fp".\Debug\prj_win32.pch" /YX /Fo".\Debug\\" /Fd".\Debug\\" /FD /GZ /c ..\source\connectservercmd.cpp
+connectservercmd.cpp
+	cl.exe /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /Fp".\Debug\prj_win32.pch" /YX /Fo".\Debug\\" /Fd".\Debug\\" /FD /GZ /c ..\source\interface.cpp
+interface.cpp
+	cl.exe /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /Fp".\Debug\prj_win32.pch" /YX /Fo".\Debug\\" /Fd".\Debug\\" /FD /GZ /c ..\source\interruptconnectcmd.cpp
+interruptconnectcmd.cpp
+	cl.exe /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /Fp".\Debug\prj_win32.pch" /YX /Fo".\Debug\\" /Fd".\Debug\\" /FD /GZ /c ..\source\main.cpp
+main.cpp
+	cl.exe /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /Fp".\Debug\prj_win32.pch" /YX /Fo".\Debug\\" /Fd".\Debug\\" /FD /GZ /c ..\source\requserlistcmd.cpp
+requserlistcmd.cpp
+	cl.exe /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /Fp".\Debug\prj_win32.pch" /YX /Fo".\Debug\\" /Fd".\Debug\\" /FD /GZ /c ..\source\sendfilecmd.cpp
+sendfilecmd.cpp
+	cl.exe /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /Fp".\Debug\prj_win32.pch" /YX /Fo".\Debug\\" /Fd".\Debug\\" /FD /GZ /c ..\source\sendmsgcmd.cpp
+sendmsgcmd.cpp
+	link.exe @C:\Users\×Æ×Æ\AppData\Local\Temp\nma08408.
+   Creating library .\Debug\prj_win32.lib and object .\Debug\prj_win32.exp

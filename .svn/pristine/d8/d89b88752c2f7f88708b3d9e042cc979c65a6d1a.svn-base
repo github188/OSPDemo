@@ -1,0 +1,25 @@
+/*==========================================================
+模块名：输出命令                           
+文件名：logprintf.cpp
+相关文件：client.h  
+实现功能：分层级输出命令
+作者：suzhibin
+版权：MyProject_chat_version2.0  Copyright(C)2017 KDC, All rights reserved
+-------------------------------------------------------------------------------------------------------
+修改记录：
+日  期		版本		修改人		走读人        修改记录
+
+==========================================================*/
+#include "../include/cscommon.h"
+
+
+extern u8 g_byLogLevel;
+
+void logprintf(u8 byLevel,LPSTR lpstrFormat,...)
+{
+	if (byLevel < g_byLogLevel)
+	{
+		OspPrintf(TRUE,FALSE,lpstrFormat);
+	}
+}
+

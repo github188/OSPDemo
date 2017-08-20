@@ -1,0 +1,23 @@
+Deleting intermediate files and output files for project 'server - Win32 Release'.
+--------------------Configuration: server - Win32 Release--------------------
+Compiling resources...
+Compiling...
+callback.cpp
+logprintf.cpp
+outputtoconsole.cpp
+serverfileinstance.cpp
+servermain.cpp
+servermsginstance.cpp
+telnethelp.cpp
+broadcastmsg.cpp
+procconnectreq.cpp
+procsendfilemsgreq.cpp
+procsendmsgnotify.cpp
+procsendmsgreq.cpp
+recvfilecontcmd.cpp
+recvfileinforeq.cpp
+requserlist.cpp
+Linking...
+   Creating library Release/server.lib and object Release/server.exp
+
+server.exe - 0 error(s), 0 warning(s)

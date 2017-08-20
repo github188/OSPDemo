@@ -1,0 +1,11 @@
+Invalid configuration "client - Win32 Debug" specified.
+You can specify a configuration when running NMAKE
+by defining the macro CFG on the command line. For example:
+
+NMAKE /f "client.mak" CFG="prj_win32 - Win32 Debug"
+
+Possible choices for configuration are:
+
+"prj_win32 - Win32 Release" (based on "Win32 (x86) Console Application")
+"prj_win32 - Win32 Debug" (based on "Win32 (x86) Console Application")
+

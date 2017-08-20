@@ -1,0 +1,98 @@
+/*==========================================================
+函数名：ClientfileInstance
+功能：客户端fileInstance相关处理
+算法实现：
+参数说明：[I/O/IO]参数：含义（说明：按照参数的顺序排序）
+返回值说明：
+-------------------------------------------------------------------------------------------------------
+修改记录：
+日  期		版本		修改人		走读人        修改记录
+
+===========================================================*/
+#include "../../include/client.h"
+#include "../../../include/cscommon.h"
+#include "fstream"
+#include "io.h"
+
+using namespace std;
+
+extern struct Buffer BufOne;	//缓存区
+extern struct Buffer Buftwo;
+
+//文件读取部分InstanceEntry入口实现
+void CCFileInstance::InstanceEntry(CMessage *const pMsg)
+{
+    if (NULL == pMsg) 
+    {
+        OspPrintf(TRUE,FALSE,"File InstanceEntry: client pMsg is NULL.\n");
+        OspQuit();
+        return;
+    }
+    
+    //处理收到的消息
+    u16 wCurEvent = pMsg->event;
+    switch(wCurEvent)
+    {
+    case C_C_READFILE_CMD:  //收到读文件指令---读取文件到缓存区
+		if (FILE_IDLE_STATE == CurState())
+		{
+			ProcReadFileCmd(pMsg);	//读取文件
+		}
+		else
+		{
+			logprintf(LOG_LVL_ERROR,"fileinst:ERROR 收到读文件cmd");
+			cbShowMsgtoConsole("fileinst:ERROR 收到读文件cmd.",OutputMsgtoUser);
+		}
+        break;
+
+	case C_C_READFILENEXT_NOTIFY:	//读取下一个缓存区命令	！不存在的-->？存疑：此消息若不满足条件而进行sleep(1000),此条消息是否就已经被处理过了！所以sleep是画蛇添足的？
+		if (FILE_READ_STATE == CurState())
+		{
+			ProcReadFileNextNotify(pMsg);
+		}
+		else
+		{
+			logprintf(LOG_LVL_ERROR,"fileinst:ERROR 收到读缓存notify");
+			cbShowMsgtoConsole("fileinst:ERROR 收到读缓存notify.",OutputMsgtoUser);
+		}	
+		break;
+        
+    case C_C_WRITEDONE_NOTIFY: //收到写完成消息
+        if (FILE_READ_STATE == CurState())
+        {
+			NextState(FILE_IDLE_STATE);
+            logprintf(LOG_LVL_KEYSTATUS,"File:recv write done.\n");
+        }
+		else
+        {
+			logprintf(LOG_LVL_ERROR,"fileinst:ERROR 收到写完成notify");
+			cbShowMsgtoConsole("fileinst:ERROR 收到写完成notify.",OutputMsgtoUser);		
+		}
+        break;
+       
+	case C_C_DISCONNECT_NOTIFY:	//收到断链检测消息
+		if (FILE_READ_STATE == CurState())
+		{
+			NextState(FILE_IDLE_STATE);
+			if (m_pFileRead != NULL)	//判断指针是否关闭
+			{
+				if (fclose(m_pFileRead))
+				{
+					perror("fclose");
+				}
+				m_pFileRead = NULL;
+			}
+		}
+		else
+		{
+			logprintf(LOG_LVL_ERROR,"fileinst:ERROR 收到断链消息notify");
+			cbShowMsgtoConsole("fileinst:ERROR 收到断链消息notify.",OutputMsgtoUser);		
+		}
+		break;
+
+    default:
+        logprintf(LOG_LVL_ERROR,"Daemon:ERROR 收到未定义消息");
+		cbShowMsgtoConsole("Daemon:ERROR 收到未定义消息",OutputMsgtoUser);
+        break;
+    } 
+}

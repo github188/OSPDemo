@@ -1,0 +1,81 @@
+/*==========================================================
+模块名：telnet api                           
+文件名：osphelp.cpp
+相关文件：client.h  
+实现功能：telnet窗口帮助命令
+作者：suzhibin
+版权：MyProject_chat_version2.0  Copyright(C)2017 KDC, All rights reserved
+-------------------------------------------------------------------------------------------------------
+修改记录：
+日  期		版本		修改人		走读人        修改记录
+
+==========================================================*/
+#include "../../include/client.h"
+
+//输出log等级
+u8 g_byLogLevel = 5;
+
+API void help(void)
+{
+	OspPrintf(TRUE,FALSE,"Project Version: OSP.KD.CLIENT.2.0.0.20170802. Compile Time: 14:36:24 2017/08/02");
+	
+	OspPrintf(TRUE,FALSE,"\n\nversion:\n");
+	OspPrintf(TRUE,FALSE,"说明:显示工程的版本信息 \n\n");
+
+	OspPrintf(TRUE,FALSE,"logshow:\n");
+	OspPrintf(TRUE,FALSE,"说明:显示当前信息输出等级.\n\n");
+
+	OspPrintf(TRUE,FALSE,"logset [level]:\n");
+	OspPrintf(TRUE,FALSE,"说明:设置信息输出等级(1 -- 5).\n\t1.程序运行错误（逻辑或业务出错），必须输出.\n\t2.告警信息，可能正确，可能出错。\n\t3.程序运行到一个关键状态时的信息输出\n\t4.普通信息，最好不要写进log文件中\n\t5.更高级别的打印\n\n");
+
+	OspPrintf(TRUE,FALSE,"logstop:\n");
+	OspPrintf(TRUE,FALSE,"说明:暂停屏幕日志输出.\n");
+
+	OspPrintf(TRUE,FALSE,"logresume:\n");
+	OspPrintf(TRUE,FALSE,"说明:恢复屏幕日志输出.\n");
+
+	OspPrintf(TRUE,FALSE,"showinstate [id]:\n");
+	OspPrintf(TRUE,FALSE,"说明:显示对应APP下所有instance状态.\tu16 aid:App id号 \n");
+	
+	OspPrintf(TRUE,FALSE,"showapp:\n");
+	OspPrintf(TRUE,FALSE,"说明:显示所有APP的状态信息. \n");
+
+}
+
+API void version(void)
+{
+	OspPrintf(TRUE,FALSE,"Comments:        OSP Demo / C-S\nCompanyName:     苏州科达科技有限公司\nFileDescription: OSP-客户端\nFileVersion:     4, 0, 0, 1\nInternalName:    client\nLegalCopyright:  版权所有(C)2017.03-2017.08 苏州科达科技有限公司\nLegalTrademarks: KEDACOM\nOriginalFilename:client.exe\nProductName:     OSP—client应用程序\nProductVersion:  2, 0, 0, 1\n");
+}
+
+API void logshow()
+{
+	OspPrintf(TRUE,FALSE,"Now level is : %d",g_byLogLevel);
+}
+
+API void logset(u8 sRet)
+{
+	g_byLogLevel = sRet;
+	OspPrintf(TRUE,FALSE,"Set level success,\nlevel = %d",g_byLogLevel);
+}
+
+API void logstop(void)
+{
+	OspPrintf(TRUE,FALSE,"DONE\n");
+	OspStopScrnLog();
+}
+
+API void logresume(void)
+{
+	OspResumeScrnLog();
+	OspPrintf(TRUE,FALSE,"Done.\n");
+}
+
+API void showinstate(u16 aid)
+{
+	OspInstShow(aid);
+}
+
+API void showapp(void)
+{
+	OspAppShow();
+}

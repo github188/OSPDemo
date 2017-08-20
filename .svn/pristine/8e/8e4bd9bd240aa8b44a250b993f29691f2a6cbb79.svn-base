@@ -1,0 +1,56 @@
+/*==========================================================
+函数名：CconnectServercCmd
+功能：向Daemon发送连接服务器命令
+算法实现：
+参数说明：arr1 保存ip地址的指针  arr2 保存用户名
+返回值说明：
+-------------------------------------------------------------------------------------------------------
+修改记录：
+日  期		版本		修改人		走读人        修改记录
+
+===========================================================*/
+
+#include "../../include/interface.h"
+
+using namespace std;
+
+void ConnectServerCMD()
+{
+	s8 achipaddr[20] = {0};   //服务器ip
+	s8 achusername[20] = {0}; //用户名
+				
+	cout << "输入服务器IP："<<endl;
+	cin.get(achipaddr,20);
+	if (FALSE == UserInputCheck(IPCHECK,achipaddr))
+	{
+		cout << "ip地址不合法，重新来过---】"<<endl;
+        return;
+	}
+    getchar();
+				
+	cout <<"输入用户名："<<endl;
+	cin.get(achusername,20);
+	if (FALSE == UserInputCheck(USERNAMECHECK,achusername))
+	{
+		cout << "用户名不符合规则，重新来过---】"<<endl;
+		return;
+	}
+
+    s8 achcontent[40] = {0};	 //组合消息
+    u32 dwRetVal;                //OspPost返回值
+    
+    strcpy(achcontent,achipaddr);
+    strcat(achcontent,",");
+    strcat(achcontent,achusername);
+   
+    dwRetVal = OspPost(MAKEIID(CLIENT_MSGAPP_NO,CInstance::DAEMON),U_C_CONNECTSERVER_CMD,achcontent,sizeof(achcontent));//给Daemon发送连接消息
+
+	if (0 == dwRetVal)  //是否发送成功
+    {
+		logprintf(LOG_LVL_DETAIL,"post to daemon Msg Cmd succeed.\n");
+    }
+    else
+    {
+		logprintf(LOG_LVL_DETAIL,"post to daemon Msg Cmd failed.\n");
+    } 
+}

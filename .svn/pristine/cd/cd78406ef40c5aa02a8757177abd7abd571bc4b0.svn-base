@@ -1,0 +1,57 @@
+/*==========================================================
+函数名：ClientfileInstance
+功能：客户端fileInstance相关处理
+算法实现：
+参数说明：[I/O/IO]参数：含义（说明：按照参数的顺序排序）
+返回值说明：
+-------------------------------------------------------------------------------------------------------
+修改记录：
+日  期		版本		修改人		走读人        修改记录
+
+===========================================================*/
+#include "../../include/client.h"
+#include "../../../include/cscommon.h"
+#include "fstream"
+#include "io.h"
+
+using namespace std;
+
+extern struct Buffer BufOne;	//缓存区
+extern struct Buffer Buftwo;
+
+//文件读取部分InstanceEntry入口实现
+void CCFileInstance::InstanceEntry(CMessage *const pMsg)
+{
+    if (NULL == pMsg) 
+    {
+        OspPrintf(TRUE,FALSE,"File InstanceEntry: client pMsg is NULL.\n");
+        OspQuit();
+        return;
+    }
+    
+    //处理收到的消息
+    u16 wCurEvent = pMsg->event;
+    switch(wCurEvent)
+    {
+    case C_C_READFILE_CMD:  //收到读文件指令---读取文件到缓存区
+		ProcReadFileCmd(pMsg);	//读取文件
+		break;
+
+	case C_C_READFILENEXT_NOTIFY:	//读取下一个缓存区命令	！不存在的-->？存疑：此消息若不满足条件而进行sleep(1000),此条消息是否就已经被处理过了！所以sleep是画蛇添足的？
+		ProcReadFileNextNotify(pMsg);	
+		break;
+        
+    case C_C_WRITEDONE_NOTIFY: //收到写完成消息
+		ProcWriteDoneNoti(pMsg);
+        break;
+       
+	case C_C_DISCONNECT_NOTIFY:	//收到断链检测消息
+		ProcDisConnectNoti(pMsg);
+		break;
+
+    default:
+        logprintf(LOG_LVL_ERROR,"Daemon:ERROR 收到未定义消息");
+		cbShowMsgtoConsole("Daemon:ERROR 收到未定义消息",OutputMsgtoUser);
+        break;
+    } 
+}

@@ -1,0 +1,88 @@
+/*==========================================================
+函数名：ProcSendFileMsgReq
+功能：服务器收到发送文件信息请求
+算法实现：
+参数说明：pMsg : OSP传递的消息体
+返回值说明：无
+-------------------------------------------------------------------------------------------------------
+修改记录：
+日  期		版本		修改人		走读人        修改记录
+
+===========================================================*/
+#include "../include/server.h"
+#include "../../include/cscommon.h"
+#include "direct.h"
+#include "io.h"
+
+extern CServerApp g_CServerApp;
+
+void CSDateInstance::ProcSendFileMsgReq(CMessage *const pMsg)
+{
+	//信息保存
+	m_dwClientFileId = pMsg->srcid;
+    s8 achFileMsg[110] = {0};
+    memcpy(achFileMsg,pMsg->content,pMsg->length);
+
+	logprintf(LOG_LVL_KEYSTATUS,"Instance: recv file info.\n");
+
+    //这里先将文件信息发给写文件app
+    //遍历找到写文件app的空闲InstanceId号 ---使用pending需要增加一条反馈信息-----应该确定，不能pending    
+	/** 2017.07.18修改：使用pending，增加消息
+	u16 wInsnum  = 1;
+	m_dwServerId = MAKEIID(SERVER_FILEAPP_NO,wInsnum);	**/
+	
+	//获取路径的文件名……！！！ 
+	s8 achFileTemp[10] = {0};
+	memcpy(achFileTemp,achFileMsg,sizeof(achFileTemp));
+	m_dwFileSize = atoi(achFileTemp);		//强制转换保存文件大小
+	memcpy(m_achFileName,achFileMsg+sizeof(achFileTemp),sizeof(m_achFileName));
+	m_dwFileNum = m_dwFileSize / SERVER_FILE_BUFF_SIZE + 1; //文件需要传输的次数---对文件传输进行判定
+			
+	s8 achFilePath[220] = {0};
+	sprintf(achFilePath,"%s",m_achFileName);	//固定保存路径  ！！增加文件夹路径判断
+            
+	//判断是否存在同名文件，更改文件名2017.07.20
+	if (0 == access(achFilePath,0))
+	{
+		s8 achFiletemp[100] = {0};//文件名拷贝
+		u16 wFilenum = 0;  //增加后缀
+		s8 achFilenum[1] = {0};//后缀字符串
+		s8 achFilename[220] = {0}; //文件名
+		s8 achFileInfo[10] = {0}; //文件格式
+				
+		//strtok  不安全
+		strcpy(achFiletemp,m_achFileName); //文件名拷贝
+		strcpy(achFilename,strtok(achFiletemp,"."));//将文件名前部分取出
+		strcpy(achFileInfo,strtok(NULL,"\0"));	//保存文件名后部分
+
+		while (0 == access(achFilePath,0))  //更改文件名
+		{
+			cbShowMsgtoConsole("instance : This File Name is Exited. Now Change.",OutputMsgtoUser);
+			wFilenum++;
+			memset(m_achFileName,0,sizeof(m_achFileName));
+			memcpy(m_achFileName,achFilename,strlen(achFilename));
+			
+			strcat(m_achFileName,itoa(wFilenum,achFilenum,10));
+			strcat(m_achFileName,".");
+			strcat(m_achFileName,achFileInfo);
+			sprintf(achFilePath,"%s",m_achFileName);
+		}
+	}
+						
+	memset(achFileMsg,0,sizeof(achFileMsg));
+	//组合文件大小和文件名  0807---标准化消息格式
+    sprintf(achFileMsg,"%10d%s",m_dwFileSize,m_achFileName);
+	cbShowMsgtoConsole(achFileMsg,OutputMsgtoUser);
+	
+    if (m_dwFileSize <= g_CServerApp.GetFileStore())	//判断文件大小，确认是否上传
+    {
+        g_CServerApp.SetFileStore(g_CServerApp.GetFileStore() - m_dwFileSize);
+		post(MAKEIID(SERVER_FILEAPP_NO,PENDING),S_S_FILEMSG_REQ,achFileMsg,strlen(achFileMsg),0);		
+    }
+	else
+	{
+		logprintf(LOG_LVL_ERROR,"Instance: file store size left little.\n");
+		cbShowMsgtoConsole("File Store Size is too small,please Contact We to UPDATE",OutputMsgtoUser);
+        post(pMsg->srcid,S_C_SENDFILEMSG_NACK,NULL,0,pMsg->srcnode);
+    }
+}

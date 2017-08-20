@@ -1,0 +1,15 @@
+Warning: cannot find "demo.dep"
+	if not exist ".\Debug/" mkdir ".\Debug"
+	cl.exe @C:\DOCUME~1\李洪强\LOCALS~1\Temp\nma00448.
+stdafx.cpp
+	rc.exe /l 0x804 /fo".\Debug\demo.res" /d "_DEBUG" /d "_AFXDLL" .\demo.rc
+	cl.exe @C:\DOCUME~1\李洪强\LOCALS~1\Temp\nmb00448.
+Skipping... (no relevant changes detected)
+stdafx.cpp
+	cl.exe /nologo /MDd /W3 /Gm /GX /ZI /Od /I ".\\" /I "..\include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /Fp".\Debug\demo.pch" /Yu"stdafx.h" /Fo".\Debug\\" /Fd".\Debug\\" /FD /GZ /c ..\source\demo.cpp
+demo.cpp
+	cl.exe /nologo /MDd /W3 /Gm /GX /ZI /Od /I ".\\" /I "..\include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /Fp".\Debug\demo.pch" /Yu"stdafx.h" /Fo".\Debug\\" /Fd".\Debug\\" /FD /GZ /c ..\source\demodlg.cpp
+demodlg.cpp
+	link.exe @C:\DOCUME~1\李洪强\LOCALS~1\Temp\nmc00448.
+	del ..\version\debug\demo.ilk
+	echo Helper for Post-build step > ".\Debug\postbld.dep"

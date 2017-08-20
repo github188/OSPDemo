@@ -1,0 +1,30 @@
+/*==========================================================
+模块名：输出命令                           
+文件名：logprintf.cpp
+相关文件：client.h  
+实现功能：分层级输出命令
+作者：suzhibin
+版权：MyProject_chat_version2.0  Copyright(C)2017 KDC, All rights reserved
+-------------------------------------------------------------------------------------------------------
+修改记录：
+日  期		版本		修改人		走读人        修改记录
+
+==========================================================*/
+#include "../include/cscommon.h"
+
+//u8  g_byClientLog ;可分层级打印调试信息，但是这种方法不起效果。。。。如何区分Debug和Release版本？---debug需要加下划线！！
+#ifdef _DEBUG
+u8 g_byLogLevel = LOG_LVL_REPEAT;	//debug模式启动最高级别的打印5
+#else
+u8 g_byLogLevel = LOG_LVL_ERROR;
+#endif
+
+extern u8 g_byLogLevel;
+void logprintf(u8 byLevel,LPSTR lpstrFormat)
+{
+	if (byLevel <= g_byLogLevel)
+	{
+		OspPrintf(TRUE,FALSE,lpstrFormat);
+	}
+}
+

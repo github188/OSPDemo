@@ -1,0 +1,127 @@
+/*==========================================================
+函数名：ProcSendFileInfoCmd
+功能：客户端发送文件信息到服务器
+算法实现：
+参数说明：pMsg : OSP传递的消息体
+返回值说明：无
+-------------------------------------------------------------------------------------------------------
+修改记录：
+日  期		版本		修改人		走读人        修改记录
+
+===========================================================*/
+
+#include "../../include/client.h"
+#include "../../../include/cscommon.h"
+#include "io.h"
+using namespace std;
+
+extern u32 g_dwFileNumTemp;	    //存储文件发送次数--判定条件和偏移量
+extern u32 g_dwFileNumShang;	//文件大小和每包大小之差--用来判定偏移量
+
+//发送文件信息操作
+void CCDateInstance::ProcSendFileInfoCmd(CMessage *const pMsg) 
+{
+	if (IDLE_STATE == CurState())
+	{
+		DateInstanceClear();
+		//发送文件信息
+		s8 achFileInfo[CSBIGSIZE] = {0};           
+    memcpy(m_achFilename,pMsg->content,pMsg->length);
+
+	logprintf(LOG_LVL_DETAIL,"Instance: recv file msg.\n");
+	cbShowMsgtoConsole("收到文件信息：",OutputMsgtoUser);
+           
+	//实现获取文件信息大小，发到服务器-----
+    //直接传当前文件目录下文件   2017-7-27可传任意路径文件，仅将文件名发到服务器！！！！！！！！！！！！！
+/*		FILE *pFile = fopen(m_achFilename,"rb+");
+		if (pFile==NULL)
+		{
+			logprintf(LOG_LVL_ERROR,"Instance: open file error.\n");
+			perror("Error opening file");	
+		}
+		else
+		{    
+*/          //修改--获取文件大小  
+			//已经判断文件存在
+			struct stat info;
+
+			//stat("../../include",&info);
+		    //cout <<"file folder size : "<< info.st_size << endl;
+
+			stat(m_achFilename,&info);
+			m_dwFileSize = info.st_size;
+
+		/*	fseek (pFile, 0, SEEK_END);   ///将文件指针移动文件结尾
+			m_dwFileSize =ftell (pFile); ///求出当前文件指针距离文件开始的字节数
+*/			m_dwFileNum = m_dwFileSize / CLIENT_SEND_FILE_SIZE + 1;//*****这是很重要的数值--需要发送的次数
+			g_dwFileNumTemp = m_dwFileNum;
+			g_dwFileNumShang = g_dwFileNumTemp - 1;
+
+			//07.31取出文件名----另需要保存文件路径
+			strcpy(m_achFilePath,m_achFilename);
+			for (u32 dwTemp = sizeof(m_achFilePath) - 1;dwTemp > 0;dwTemp--)
+			{
+				if (m_achFilePath[dwTemp] == '\\')
+				{
+					memset(m_achFilename,0,sizeof(m_achFilename));
+					strcpy(m_achFilename,m_achFilePath+dwTemp+1);
+					break;
+				}
+			}
+			//组合文件大小和文件名
+			sprintf(achFileInfo,"%10d%s",m_dwFileSize,m_achFilename);
+			cbShowMsgtoConsole(achFileInfo,OutputMsgtoUser);
+	
+			NextState(CONNECT_STATE);//状态切换
+			post(pMsg->srcid,C_S_SENDFILEMSG_REQ,achFileInfo,strlen(achFileInfo),pMsg->srcnode);//发送请求到服务器
+					
+			//设置断链检测---告知instance
+			OspSetHBParam(pMsg->srcnode,CLIENT_HBTIME,CLIENT_HBNUM);
+			OspNodeDiscCBRegQ(pMsg->srcnode,CLIENT_MSGAPP_NO,GetInsID());
+	//	}
+		//fclose(pFile);
+		//pFile = NULL;
+	}
+	else
+	{
+		logprintf(LOG_LVL_ERROR,"instance:ERROR 收到发文件消息");
+		cbShowMsgtoConsole("instance:请等待文件上传完成",OutputMsgtoUser);
+    }    
+	
+}   
+
+void CCDateInstance::ProcSendFileInfoAck(CMessage *const pMsg) 
+{
+	if (CONNECT_STATE == CurState())
+	{
+		NextState(FILE_STATE);
+		logprintf(LOG_LVL_KEYSTATUS,"Instance: recv server ack, post cmd to read file instance");
+		cbShowMsgtoConsole("收到文件ack消息，开始上传~上传进度见telnet窗口",OutputMsgtoUser);
+		
+		//保存对端服务器信息--
+		m_dwServerNode = pMsg->srcnode;
+		m_dwServerId = pMsg->srcid;
+		
+		post(MAKEIID(CLIENT_FILEAPP_NO,CInstance::PENDING),C_C_READFILE_CMD,m_achFilePath,sizeof(m_achFilename));//发送读文件命令到fileapp
+	}
+	else
+	{
+		logprintf(LOG_LVL_ERROR,"instance:ERROR 收到发文件ack消息");
+		cbShowMsgtoConsole("instance:ERROR 收到发文件ack消息",OutputMsgtoUser);			
+    }
+}
+
+void CCDateInstance::ProcSendFileInfoNack(CMessage *const pMsg)
+{
+	if (CONNECT_STATE == CurState())
+	{
+		logprintf(LOG_LVL_KEYSTATUS,"Instance: recv server nack, can't send file" );
+		cbShowMsgtoConsole("服务器拒绝文件上传",OutputMsgtoUser);	
+		NextState(IDLE_STATE);
+	}
+	else
+	{
+		logprintf(LOG_LVL_ERROR,"instance:ERROR 收到发文件nack消息");
+		cbShowMsgtoConsole("instance:ERROR 收到发文件nack消息",OutputMsgtoUser);		
+	}
+}

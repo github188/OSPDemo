@@ -1,0 +1,402 @@
+/*==========================================================
+函数名：ClientInstance
+功能：客户端Instance相关处理
+算法实现：
+参数说明：[I/O/IO]参数：含义（说明：按照参数的顺序排序）
+返回值说明：
+-------------------------------------------------------------------------------------------------------
+修改记录：
+日  期		版本		修改人		走读人        修改记录
+
+===========================================================*/
+#include "../../include/client.h"
+#include "../../include/uccommand.h"
+#include "../../../include/cscommon.h"
+
+#include "fstream"
+
+using namespace std;
+
+CClientMsgApp g_CClientApp;
+CClientFileApp  g_CClientFileApp;
+
+struct Buffer BufOne;	//缓存区
+struct Buffer Buftwo;
+
+u32 g_dwFileNumTemp = 0;	//存储文件发送次数--判定条件和偏移量
+u32 g_dwFileNumShang = 0;	//文件大小和每包大小之差--用来判定偏移量
+
+
+//DaemonInstanceEntry入口函数设置
+void CCDateInstance::DaemonInstanceEntry(CMessage *const pMsg,CApp* pcApp)
+{
+    if ((NULL == pMsg) || (NULL == pcApp))
+    {
+		logprintf(LOG_LVL_ERROR,"client pMsg or pcApp is NULL.\n");
+        OspQuit();
+        return;
+    }
+    //处理收到的消息
+    u16 wCurEvent = pMsg->event;    
+    cin.clear();
+  
+    switch(wCurEvent)
+    {
+		OspEventDescShow(wCurEvent);	//Telnet上的OspEventDescShow命令,显示消息的描述
+	case U_C_CONNECTSERVER_CMD:     //连接服务器        
+        if (IDLE_STATE == CurState())
+        {
+            DaemonProcConnectCmd(pMsg);    //连接服务器
+            post(MAKEIID(SERVER_MSGAPP_NO,CInstance::PENDING),C_S_CONNECTSERVER_REQ,m_achusername,sizeof(m_achusername),m_dwServerNode);   
+        } 
+		else
+		{
+			cbShowMsgtoConsole("已经连接了服务器 !",OutputMsgtoUser);
+			logprintf(LOG_LVL_ERROR,"Daemon: you had been connect server !\n");
+        }     
+        break;
+
+    case S_C_CONNECTSERVER_ACK:     //连接成功反馈--状态切换
+		if (IDLE_STATE == CurState())
+		{
+			NextState(CONNECT_STATE);
+            m_dwServerId = pMsg->srcid;
+			KillTimer(CONNECT_TIMEOUT);  //取消定时器
+			cbShowMsgtoConsole("收到ack反馈，连接服务器成功!",OutputMsgtoUser);
+			logprintf(LOG_LVL_KEYSTATUS,"Daemon: recv server connect ack !Connect Success!\n");
+		}
+		else
+		{
+			logprintf(LOG_LVL_ERROR,"Daemon: ERROR recv server ack!\n");
+		}
+		break;
+    
+    case U_C_REQUSERLIST_CMD:       //请求用户列表
+        if (IDLE_STATE == CurState())
+        {
+			cbShowMsgtoConsole("请先连接服务器!",OutputMsgtoUser);
+        }
+		else
+		{
+            post(MAKEIID(SERVER_MSGAPP_NO,CInstance::DAEMON),C_S_REQUSERLIST_REQ,NULL,0,m_dwServerNode);
+            logprintf(LOG_LVL_KEYSTATUS,"Daemon: post req userlist to server.\n ");
+		}
+        break;
+
+    case S_C_REQUSERLIST_ACK:       //用户列表反馈
+		if (IDLE_STATE != CurState())
+		{
+			s8 achUserList[100]= {0};
+			memcpy(achUserList,pMsg->content,pMsg->length);
+			logprintf(LOG_LVL_KEYSTATUS,"Daemon: recv userlist ack .\n");
+			cbShowMsgtoConsole("用户列表如下：",OutputMsgtoUser);
+			cbShowMsgtoConsole(achUserList,OutputMsgtoUser);
+		}
+		else
+		{
+			logprintf(LOG_LVL_ERROR,"Daemon:ERROR 收到用户列表ack");
+			cbShowMsgtoConsole("Daemon:ERROR 收到用户列表ack.",OutputMsgtoUser);
+		}
+        break;
+
+    case S_C_REQUSERLIST_NACK:      //无用户反馈
+		if (IDLE_STATE != CurState())
+		{
+			logprintf(LOG_LVL_KEYSTATUS,"Daemon: recv userlist nack.\n");
+		    cbShowMsgtoConsole("用户列表为空",OutputMsgtoUser);
+		}
+		else
+		{
+			logprintf(LOG_LVL_ERROR,"Daemon:ERROR 收到用户列表nack");
+			cbShowMsgtoConsole("Daemon:ERROR 收到用户列表nack.",OutputMsgtoUser);
+		}
+        break;
+
+    case U_C_SENDMSG_CMD:   //发消息
+        if (IDLE_STATE == CurState())
+        {
+            cbShowMsgtoConsole("请先连接服务器!",OutputMsgtoUser);
+        }
+		else
+		{
+            logprintf(LOG_LVL_KEYSTATUS,"Daemon: recv send msg cmd.\n");
+			DaemonProcMsgSendCmd(pMsg);  //发送消息         
+        }       
+        break;
+
+	case S_C_SENDMSG_ACK:   //消息发送ack反馈
+		if (IDLE_STATE != CurState())
+		{
+			logprintf(LOG_LVL_DETAIL,"Daemon: post msg to man succeed.\n ");
+			cbShowMsgtoConsole("消息发送成功!",OutputMsgtoUser);
+		}
+		else
+		{
+			logprintf(LOG_LVL_ERROR,"Daemon:ERROR 收到发送消息ack");
+			cbShowMsgtoConsole("Daemon:ERROR 收到发送消息ack.",OutputMsgtoUser);
+		}		
+		break;
+
+	case S_C_SENDMSG_NACK:    //消息发送nack反馈
+		if (IDLE_STATE != CurState())
+		{
+			logprintf(LOG_LVL_DETAIL,"Daemon: post msg to man fail.\n ");
+			cbShowMsgtoConsole("消息发送失败!",OutputMsgtoUser);
+		}
+		else
+		{
+			logprintf(LOG_LVL_ERROR,"Daemon:ERROR 收到发送消息nack");
+			cbShowMsgtoConsole("Daemon:ERROR 收到发送消息nack.",OutputMsgtoUser);
+		}					
+		break;
+
+    case S_C_SENDMSG_NOTIFY:    //收到消息通知
+        if (IDLE_STATE != CurState())
+        {
+			s8 achMsgContent[100] = {0};
+			cbShowMsgtoConsole("收到消息：",OutputMsgtoUser);         
+            memcpy(achMsgContent,pMsg->content,pMsg->length);
+			cbShowMsgtoConsole(achMsgContent,OutputMsgtoUser);
+			logprintf(LOG_LVL_DETAIL,"Daemon: recv msg from server.\n");
+        }
+		else
+		{
+			logprintf(LOG_LVL_ERROR,"Daemon:ERROR 收到消息notify");
+			cbShowMsgtoConsole("Daemon:ERROR 收到消息notify.",OutputMsgtoUser);
+		}       
+        break;
+
+    case U_C_SENDFILE_CMD:      //发文件命令
+        if (IDLE_STATE == CurState())
+        {
+			cbShowMsgtoConsole("请先连接服务器!",OutputMsgtoUser);
+        }
+		else
+		{
+            NextState(FILE_STATE);
+			logprintf(LOG_LVL_DETAIL,"Daemon: recv send file cmd.\n ");
+            s8 achFileInfo[256] = {0};			//文件信息
+            memcpy(achFileInfo,pMsg->content,pMsg->length);
+            //实现遍历Instance 方法----7.18更改使用pending
+			//!!!注意：此处使用osppost带上了服务端的id号，将导致同一客户端不能同时上传文件---8.11pending更改固定，仅可上传一个文件
+            OspPost(MAKEIID(CLIENT_MSGAPP_NO,1),C_C_SENDFILE_CMD,achFileInfo,sizeof(achFileInfo),0,m_dwServerId,m_dwServerNode);
+        }      
+        break;
+ 
+    case OSP_OVERFLOW:  //无空闲实例
+		if (IDLE_STATE == CurState())
+		{
+			cbShowMsgtoConsole("服务器正忙!",OutputMsgtoUser);
+			logprintf(LOG_LVL_WARNING,"Daemon: server busy now.\n");
+		}
+		else
+		{
+			logprintf(LOG_LVL_ERROR,"Daemon:ERROR 收到消息overflow");
+			cbShowMsgtoConsole("Daemon:ERROR 收到消息overflow.",OutputMsgtoUser);
+		}		
+        break;
+
+    case OSP_DISCONNECT:    //断链---切换状态
+        if (IDLE_STATE != CurState())
+        {
+			cbShowMsgtoConsole("断开连接!",OutputMsgtoUser);
+			logprintf(LOG_LVL_WARNING,"Daemon: osp disconnect.\n");
+			NextState(IDLE_STATE);
+        }
+		else
+		{
+			logprintf(LOG_LVL_ERROR,"Daemon:ERROR 收到消息disconnect");
+			cbShowMsgtoConsole("Daemon:ERROR 收到消息disconnect.",OutputMsgtoUser);
+		}
+        break;
+
+    case CONNECT_TIMEOUT:   //连接服务器超时
+		if (IDLE_STATE == CurState())
+		{
+			cbShowMsgtoConsole("连接服务器超时!等待重连",OutputMsgtoUser);
+			DaemonProcConnectAgainCmd(pMsg); //重新连接服务器
+		}
+		else
+		{
+			logprintf(LOG_LVL_ERROR,"Daemon:ERROR 收到连接超时消息");
+			cbShowMsgtoConsole("Daemon:ERROR 收到连接超时消息",OutputMsgtoUser);
+		}
+        break;
+
+	case U_C_INTERCONNECT_CMD:	//断开连接
+		if (IDLE_STATE != CurState())
+		{
+			OspDisconnectTcpNode(m_dwServerNode);	//断开node上的连接
+			if (FILE_STATE == CurState())
+			{
+				cbShowMsgtoConsole("文件上传已取消",OutputMsgtoUser);
+			}
+			logprintf(LOG_LVL_KEYSTATUS,"Daemon: interrupt connect cmd.\n");
+			cbShowMsgtoConsole("连接已断开",OutputMsgtoUser);
+			NextState(IDLE_STATE);
+		}
+		else
+		{
+			logprintf(LOG_LVL_ERROR,"Daemon:ERROR 收到断开连接消息");
+			cbShowMsgtoConsole("未连接服务器",OutputMsgtoUser);
+		}
+		break;
+
+    default:
+		logprintf(LOG_LVL_ERROR,"Daemon:ERROR 收到未定义消息");
+		cbShowMsgtoConsole("Daemon:ERROR 收到未定义消息",OutputMsgtoUser);
+        break;
+    }
+}
+
+//文件传输部分InstanceEntry入口实现
+void CCDateInstance::InstanceEntry(CMessage *const pMsg)
+{
+    if (NULL == pMsg) 
+    {
+		logprintf(LOG_LVL_ERROR,"Instance: client pMsg is NUll.\n");
+        OspQuit();	//退出osp
+        return ;	//程序结束
+    }
+    //处理收到的消息
+    u16 wCurEvent = pMsg->event;
+	
+    switch(wCurEvent)
+    {
+    case C_C_SENDFILE_CMD:      //发文件指令----发送文件名和大小到服务器
+        if (IDLE_STATE == CurState())
+        {
+			ProcSendFileInfoCmd(pMsg);	//发送文件信息
+        }
+		else
+		{
+			logprintf(LOG_LVL_ERROR,"instance:ERROR 收到发文件消息");
+		    cbShowMsgtoConsole("instance:请等待文件上传完成",OutputMsgtoUser);
+        }        
+        break;
+
+    case S_C_SENDFILEMSG_ACK:   //文件ack反馈消息，发送cmd通知读文件app
+		if (CONNECT_STATE == CurState())
+		{
+			NextState(FILE_STATE);
+			logprintf(LOG_LVL_KEYSTATUS,"Instance: recv server ack, post cmd to read file instance");
+            cbShowMsgtoConsole("收到文件ack消息，开始上传~上传进度见telnet窗口",OutputMsgtoUser);
+            
+			//保存对端服务器信息--
+            m_dwServerNode = pMsg->srcnode;
+            m_dwServerId = pMsg->srcid;
+		
+            post(MAKEIID(CLIENT_FILEAPP_NO,CInstance::PENDING),C_C_READFILE_CMD,m_achFilePath,sizeof(m_achFilename));//发送读文件命令到fileapp
+		}
+		else
+        {
+			logprintf(LOG_LVL_ERROR,"instance:ERROR 收到发文件ack消息");
+		    cbShowMsgtoConsole("instance:ERROR 收到发文件ack消息",OutputMsgtoUser);			
+        }
+        break;
+
+    case S_C_SENDFILEMSG_NACK:   //文件NACK消息，无法发送文件
+        if (CONNECT_STATE == CurState())
+        {
+			logprintf(LOG_LVL_KEYSTATUS,"Instance: recv server nack, can't send file" );
+			cbShowMsgtoConsole("服务器拒绝文件上传",OutputMsgtoUser);	
+			NextState(IDLE_STATE);
+        }
+		else
+		{
+			logprintf(LOG_LVL_ERROR,"instance:ERROR 收到发文件nack消息");
+		    cbShowMsgtoConsole("instance:ERROR 收到发文件nack消息",OutputMsgtoUser);		
+		}
+		break;
+
+    case C_C_BUFFULL_NOTIFY:    //收到file app读完成通知，开始发送数据包；每收到此消息走一个循环、最后一个依据大小；
+		if (FILE_STATE == CurState())
+		{
+			logprintf(LOG_LVL_KEYSTATUS,"Instance: recv client file buf full notify.\n");
+			ProcBuffNotify(pMsg);
+		}
+		else
+		{
+			logprintf(LOG_LVL_ERROR,"instance:ERROR 收到缓存通知");
+		    cbShowMsgtoConsole("instance:ERROR 收到缓存通知消息",OutputMsgtoUser);
+		}	
+        break;
+
+    case S_C_SENDFILECONTENT_ACK:   //服务器返回ack，发送下一包数据
+		if (FILE_STATE == CurState())
+		{
+			ProcSendFileContentReq(pMsg);
+		}
+		else
+		{
+			logprintf(LOG_LVL_ERROR,"instance:ERROR 收到发送文件ack");
+		    cbShowMsgtoConsole("instance:ERROR 收到发送文件ack",OutputMsgtoUser);
+		}  
+        break;
+
+    case S_C_SENDFILECONTENT_NACK:  //服务器返回nack，发送同一包数据  ！！待完成---暂时为服务器写完成判断总大小
+        if (FILE_STATE == CurState())
+        {
+			 logprintf(LOG_LVL_KEYSTATUS,"Msg: recv server send file nack.\n");
+        }
+		else
+		{
+			logprintf(LOG_LVL_ERROR,"instance:ERROR 收到发送文件nack");
+		    cbShowMsgtoConsole("instance:ERROR 收到发送文件nack",OutputMsgtoUser);
+		}	
+		break;
+
+    case S_C_SENDFILEDONE_NOTIFY:      //收到写完成通知，切换状态，通知fileApp
+        if (FILE_STATE == CurState())
+        {
+			post(m_dwClientId,C_C_WRITEDONE_NOTIFY,NULL,0);
+			logprintf(LOG_LVL_KEYSTATUS,"Msg: recv server write done notify.\n");
+			cbShowMsgtoConsole("收到写完成通知",OutputMsgtoUser);
+			NextState(IDLE_STATE);
+        }
+		else
+		{
+			logprintf(LOG_LVL_ERROR,"instance:ERROR 收到发送文件完成通知");
+		    cbShowMsgtoConsole("instance:ERROR 收到发送文件完成通知",OutputMsgtoUser);		
+		}
+		break;
+
+    case OSP_OVERFLOW:      //读文件app无空闲Instance
+		if (CONNECT_STATE == CurState())
+		{
+			cbShowMsgtoConsole("写文件app正忙",OutputMsgtoUser);
+			logprintf(LOG_LVL_WARNING,"Msg: client file instance is busy.\n");
+			NextState(IDLE_STATE);
+		}
+		else
+		{
+			logprintf(LOG_LVL_ERROR,"instance:ERROR 收到发送文件完成通知");
+		    cbShowMsgtoConsole("instance:ERROR 收到发送文件完成通知",OutputMsgtoUser);	
+		}
+      
+        break;
+
+	case OSP_DISCONNECT:    //断链---切换状态
+		if (IDLE_STATE != CurState())
+		{
+			cbShowMsgtoConsole("osp连接断开",OutputMsgtoUser);
+			logprintf(LOG_LVL_ERROR,"Msg: osp disconnect.\n");
+			if (CurState() == FILE_STATE) //给fileapp发断链消息，改变状态
+			{
+				post(m_dwClientId,C_C_DISCONNECT_NOTIFY,NULL,0);
+			}
+		    NextState(IDLE_STATE);
+		}
+		else
+		{
+			logprintf(LOG_LVL_ERROR,"instance:收到OSP断链消息");
+		    cbShowMsgtoConsole("instance: 收到OSP断链消息",OutputMsgtoUser);
+		}
+        break;
+
+    default:
+		logprintf(LOG_LVL_ERROR,"Msg: can't read pMsg.\n");
+		cbShowMsgtoConsole("instance收到未知消息",OutputMsgtoUser);
+        break;
+    }
+}

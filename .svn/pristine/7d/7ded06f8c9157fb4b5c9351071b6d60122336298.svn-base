@@ -1,0 +1,24 @@
+	if not exist ".\Release/" mkdir ".\Release"
+	cl.exe /nologo /ML /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp".\Release\prj_win32.pch" /YX /Fo".\Release\\" /Fd".\Release\\" /FD /c ..\source\clientfileinstance.cpp
+clientfileinstance.cpp
+	cl.exe /nologo /ML /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp".\Release\prj_win32.pch" /YX /Fo".\Release\\" /Fd".\Release\\" /FD /c ..\source\clientinstance.cpp
+clientinstance.cpp
+	cl.exe /nologo /ML /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp".\Release\prj_win32.pch" /YX /Fo".\Release\\" /Fd".\Release\\" /FD /c ..\source\connectservercmd.cpp
+connectservercmd.cpp
+	cl.exe /nologo /ML /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp".\Release\prj_win32.pch" /YX /Fo".\Release\\" /Fd".\Release\\" /FD /c ..\source\interface.cpp
+interface.cpp
+	cl.exe /nologo /ML /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp".\Release\prj_win32.pch" /YX /Fo".\Release\\" /Fd".\Release\\" /FD /c ..\source\interruptconnectcmd.cpp
+interruptconnectcmd.cpp
+	cl.exe /nologo /ML /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp".\Release\prj_win32.pch" /YX /Fo".\Release\\" /Fd".\Release\\" /FD /c ..\source\main.cpp
+main.cpp
+	cl.exe /nologo /ML /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp".\Release\prj_win32.pch" /YX /Fo".\Release\\" /Fd".\Release\\" /FD /c ..\source\requserlistcmd.cpp
+requserlistcmd.cpp
+	cl.exe /nologo /ML /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp".\Release\prj_win32.pch" /YX /Fo".\Release\\" /Fd".\Release\\" /FD /c ..\source\sendfilecmd.cpp
+sendfilecmd.cpp
+	cl.exe /nologo /ML /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp".\Release\prj_win32.pch" /YX /Fo".\Release\\" /Fd".\Release\\" /FD /c ..\source\sendmsgcmd.cpp
+sendmsgcmd.cpp
+	link.exe @C:\Users\×Æ×Æ\AppData\Local\Temp\nma05592.
+   Creating library .\Release\prj_win32.lib and object .\Release\prj_win32.exp
+nafxcw.lib(thrdcore.obj) : error LNK2001: unresolved external symbol __endthreadex
+nafxcw.lib(thrdcore.obj) : error LNK2001: unresolved external symbol __beginthreadex
+.\Release\prj_win32.exe : fatal error LNK1120: 2 unresolved externals

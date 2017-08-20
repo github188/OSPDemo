@@ -1,0 +1,116 @@
+/*==========================================================
+模块名：服务器主程序                           
+文件名：mainserver.cpp
+相关文件：iostream.h  server.h  cscommon.h
+实现功能：创建server
+作者：苏志斌
+版权：MyProject_chat_version2.0  Copyright(C)2017 KDC, All rights reserved
+-------------------------------------------------------------------------------------------------------
+修改记录：
+日  期		版本		修改人		走读人        修改记录
+
+==========================================================*/
+#include "../include/server.h"
+#include "../include/serverfile.h"
+#include "../../include/cscommon.h"
+#include "iostream"
+#include "conio.h" //kbhit()所在的库函数
+#include "math.h"	//pow所在库函数
+
+using namespace std;
+
+CServerApp g_CServerApp;//实例化模板类
+CSFileApp g_CSFileApp;
+
+
+void main(int argc,char argv[])
+{
+    u32 dwRetVal;						//osp创建连接返回值
+    s8* pchModulName = "ServerDate";	//模块名
+	
+	cbShowMsgtoConsole("server app.Init__",OutputMsgtoUser);
+	cbShowMsgtoConsole("telnet port__2667",OutputMsgtoUser);
+
+	if (FALSE == IsOspInitd())			//判断osp是否初始化
+	{
+		OspInit(TRUE,SERVER_TELENT_PORT,pchModulName);     //初始化OSP并在端口2606启动telnet
+	}
+       
+	cbShowMsgtoConsole("server CreateApp__",OutputMsgtoUser);
+
+    g_CServerApp.CreateApp(SERVER_MSGAPP_NAME,SERVER_MSGAPP_NO,SERVER_APP_PRIO,SERVER_APP_QUE_SIZE,200<<10);
+    g_CSFileApp.CreateApp(SERVER_FILEAPP_NAME,SERVER_FILEAPP_NO,SERVER_APP_PRIO,FILE_APP_QUE_SIZE,200<<15);
+
+	if(TRUE == OspSetPrompt("SuShareServer"))	//设置终端提示符
+	{
+		cbShowMsgtoConsole("****set osp telnet string succeed****",OutputMsgtoUser);
+	}
+	else
+	{
+		cbShowMsgtoConsole("****set osp telnet string failed****",OutputMsgtoUser);
+	}
+
+	//设置存储空间大小
+    cbShowMsgtoConsole("请设置存储文件空间大小. ",OutputMsgtoUser);
+    u32 dwFileStore;
+	
+	while(TRUE)	//文件大小设置---输入检测不完整
+	{
+		if (kbhit())		//检测键盘输入。。
+		{
+			//发现输入，保存
+			scanf("%d",&dwFileStore);
+			float Temp = pow(10,-6.0);		//可使用宏定义代替----待换
+			if ((dwFileStore - (u32)dwFileStore < Temp) && (dwFileStore- (u32)dwFileStore > -Temp))
+			{
+				cbShowNumToConsole(dwFileStore," 输入正确,size = ",OutPutMsg);
+				g_CServerApp.SetFileStore(dwFileStore);
+				break;
+			}
+			else
+			{
+				cbShowMsgtoConsole("输入错误",OutputMsgtoUser);
+			}
+		}
+		else
+		{
+			Sleep(5000);
+			cbShowNumToConsole(SERVER_DEFAULT_SIZE," 设置为默认值,size = ",OutPutMsg);
+			g_CServerApp.SetFileStore(SERVER_DEFAULT_SIZE);
+			break;
+		}
+	}
+	
+    cbShowMsgtoConsole("set file store size success. ",OutputMsgtoUser);
+	
+	//定义文件接口---判断固定文件夹得大小
+
+
+
+
+    dwRetVal = OspCreateTcpNode(0,SERVER_LISTEN_PORT);          //在6688端口建立监听结点;
+    //成功返回创建的Socket描述符，失败返回INVALID_SOCKET
+    if (INVALID_SOCKET == dwRetVal)
+    {
+		cbShowMsgtoConsole("server Create Node Failed",OutputMsgtoUser);
+		logprintf(LOG_LVL_ERROR,"Server Create Node Failed!\n");
+        OspQuit();
+        return;
+    }
+    else
+    {
+		cbShowMsgtoConsole("server Create Node succeed",OutputMsgtoUser);
+		logprintf(LOG_LVL_KEYSTATUS,"Server Create Node succeed!\n");
+    }
+
+    while(TRUE)
+    {
+
+        Sleep(10);
+    }
+}
+
+
+
+
+

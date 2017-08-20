@@ -1,0 +1,37 @@
+/*==========================================================
+函数名：ProcConnectReq
+功能：服务器收到连接消息操作
+算法实现：
+参数说明：pMsg : OSP传递的消息体
+返回值说明：无
+-------------------------------------------------------------------------------------------------------
+修改记录：
+日  期		版本		修改人		走读人        修改记录
+
+===========================================================*/
+#include "../include/server.h"
+#include "../../include/cscommon.h"
+
+void CSDateInstance::ProcConnectReq(CMessage *const pMsg)
+{
+	NextState(CONNECT_STATE); 
+	m_dwInsState = CONNECT_STATE;
+	m_dwClientNode = pMsg->srcnode;
+	m_dwClientId = pMsg->srcid;
+	
+	memset(m_achClientName,0,sizeof(m_achClientName)); //清空---
+	memcpy(m_achClientName ,pMsg ->content,pMsg->length);
+	//设置Instance别名
+	SetAlias(m_achClientName,sizeof(m_achClientName));
+	
+	logprintf(LOG_LVL_KEYSTATUS,"Instance: server recv connect req.\n");
+	cbShowMsgtoConsole("收到连接服务器请求.",OutputMsgtoUser);
+	cbShowNumToConsole(m_dwClientNode,"收到连接服务器请求. node = ",OutPutMsg);
+	
+	//反馈连接ACK消息
+	post(pMsg->srcid,S_C_CONNECTSERVER_ACK,NULL,0,pMsg->srcnode);
+	
+	//设置断链检测
+	OspSetHBParam(m_dwClientNode,SERVER_HBTIME,SERVER_HBNUM);
+    OspNodeDiscCBRegQ(m_dwClientNode,SERVER_MSGAPP_NO,GetInsID());
+}

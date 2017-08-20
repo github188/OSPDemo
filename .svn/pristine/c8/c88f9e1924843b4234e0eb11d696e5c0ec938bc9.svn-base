@@ -1,0 +1,41 @@
+# Microsoft Developer Studio Generated Dependency File, included by server.mak
+
+..\source\logprintf.cpp : \
+	"..\..\..\..\..\..\..\program files (x86)\microsoft visual studio\vc98\include\basetsd.h"\
+	"..\..\include\kdvtype.h"\
+	"..\..\include\osp.h"\
+	"..\include\server.h"\
+	
+
+..\source\serverfileinstance.cpp : \
+	"..\..\..\..\..\..\..\program files (x86)\microsoft visual studio\vc98\include\basetsd.h"\
+	"..\..\include\kdvtype.h"\
+	"..\..\include\osp.h"\
+	"..\include\server.h"\
+	"..\include\serverfile.h"\
+	
+
+..\source\servermain.cpp : \
+	"..\..\..\..\..\..\..\program files (x86)\microsoft visual studio\vc98\include\basetsd.h"\
+	"..\..\include\cscommon.h"\
+	"..\..\include\kdvtype.h"\
+	"..\..\include\osp.h"\
+	"..\include\server.h"\
+	"..\include\serverfile.h"\
+	
+
+..\source\servermsginstance.cpp : \
+	"..\..\..\..\..\..\..\program files (x86)\microsoft visual studio\vc98\include\basetsd.h"\
+	"..\..\include\cscommon.h"\
+	"..\..\include\kdvtype.h"\
+	"..\..\include\osp.h"\
+	"..\include\server.h"\
+	"..\include\serverfile.h"\
+	
+
+..\source\telnethelp.cpp : \
+	"..\..\..\..\..\..\..\program files (x86)\microsoft visual studio\vc98\include\basetsd.h"\
+	"..\..\include\kdvtype.h"\
+	"..\..\include\osp.h"\
+	"..\include\server.h"\
+	
